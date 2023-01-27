@@ -633,6 +633,17 @@ static memoryMap map[256];
 static int clockTicks;
 
 static int romSize = 0x2000000;
+
+extern "C" void gba_set_rom_size(int size)
+{
+	romSize = size;
+}
+
+extern "C" int gba_get_rom_size(void)
+{
+	return romSize;
+}
+
 static uint32_t line[6][240];
 static bool gfxInWin[2][240];
 static int lineOBJpixleft[128];
@@ -8952,13 +8963,12 @@ void CPUCleanUp (void)
 
 static bool CPUSetupBuffers(void)
 {
-	romSize = 0x2000000;
 	if(rom != NULL)
 		CPUCleanUp();
 
 	//systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
 
-	rom = (uint8_t *)memalign_alloc_aligned(0x2000000);
+	rom = (uint8_t *)memalign_alloc_aligned(romSize);
 	workRAM = (uint8_t *)memalign_alloc_aligned(0x40000);
 	bios = (uint8_t *)memalign_alloc_aligned(0x4000);
 	internalRAM = (uint8_t *)memalign_alloc_aligned(0x8000);
@@ -8968,7 +8978,7 @@ static bool CPUSetupBuffers(void)
 	pix = (uint16_t *)memalign_alloc_aligned(4 * PIX_BUFFER_SCREEN_WIDTH * 160);
 	ioMem = (uint8_t *)memalign_alloc_aligned(0x400);
 
-	memset(rom, 0, 0x2000000);
+	memset(rom, 0, romSize);
 	memset(workRAM, 1, 0x40000);
 	memset(bios, 1, 0x4000);
 	memset(internalRAM, 1, 0x8000);
@@ -9046,7 +9056,7 @@ static void CPULoadRomGeneric(uint8_t *whereToLoad)
 
 	temp = (uint16_t *)(rom+((romSize+1)&~1));
 
-	for(i = (romSize+1)&~1; i < 0x2000000; i+=2)
+	for(i = (romSize+1)&~1; i < romSize; i+=2)
    {
 		WRITE16LE(temp, (i >> 1) & 0xFFFF);
 		temp++;
@@ -12498,7 +12508,7 @@ void CPUInit(const char *biosFileName, bool useBiosFile)
 	for(i = 0x304; i < 0x400; i++)
 		ioReadable[i] = false;
 
-	if(romSize < 0x1fe2000) {
+	if(romSize > 0x1fe209e) {
 		*((uint16_t *)&rom[0x1fe209c]) = 0xdffa; // SWI 0xFA
 		*((uint16_t *)&rom[0x1fe209e]) = 0x4770; // BX LR
 	}
