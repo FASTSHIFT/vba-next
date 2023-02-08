@@ -7,6 +7,7 @@
 #include <libretro.h>
 #include <vfs/vfs.h>
 #include <streams/file_stream.h>
+#include <memalign.h>
 #include "libretro_core_options.h"
 
 #include "../src/system.h"
@@ -27,10 +28,14 @@ static retro_environment_t environ_cb;
 static bool libretro_supports_bitmasks = false;
 
 static bool can_dupe;
-char filename_bios[0x100] = {0};
+#if HAVE_HLE_BIOS
+static char filename_bios[0x100] = {0};
+#endif
 
-uint8_t libretro_save_buf[0x20000 + 0x2000];	/* Workaround for broken-by-design GBA save semantics. */
-static unsigned libretro_save_size = sizeof(libretro_save_buf);
+#define LIBRETRO_SAVE_BUF_SIZE_DEF (0x20000 + 0x2000)
+
+static uint8_t *libretro_save_buf = NULL;	/* Workaround for broken-by-design GBA save semantics. */
+static unsigned libretro_save_size = LIBRETRO_SAVE_BUF_SIZE_DEF;
 
 void *retro_get_memory_data(unsigned id)
 {
@@ -68,14 +73,14 @@ static bool scan_area(const uint8_t *data, unsigned size)
 static void adjust_save_ram(void)
 {
    if (scan_area(libretro_save_buf, 512) &&
-         !scan_area(libretro_save_buf + 512, sizeof(libretro_save_buf) - 512))
+         !scan_area(libretro_save_buf + 512, LIBRETRO_SAVE_BUF_SIZE_DEF - 512))
    {
       libretro_save_size = 512;
       if (log_cb)
          log_cb(RETRO_LOG_DEBUG, "Detecting EEprom 8kbit\n");
    }
    else if (scan_area(libretro_save_buf, 0x2000) && 
-         !scan_area(libretro_save_buf + 0x2000, sizeof(libretro_save_buf) - 0x2000))
+         !scan_area(libretro_save_buf + 0x2000, LIBRETRO_SAVE_BUF_SIZE_DEF - 0x2000))
    {
       libretro_save_size = 0x2000;
       if (log_cb)
@@ -83,14 +88,14 @@ static void adjust_save_ram(void)
    }
 
    else if (scan_area(libretro_save_buf, 0x10000) && 
-         !scan_area(libretro_save_buf + 0x10000, sizeof(libretro_save_buf) - 0x10000))
+         !scan_area(libretro_save_buf + 0x10000, LIBRETRO_SAVE_BUF_SIZE_DEF - 0x10000))
    {
       libretro_save_size = 0x10000;
       if (log_cb)
          log_cb(RETRO_LOG_DEBUG, "Detecting Flash 512kbit\n");
    }
    else if (scan_area(libretro_save_buf, 0x20000) && 
-         !scan_area(libretro_save_buf + 0x20000, sizeof(libretro_save_buf) - 0x20000))
+         !scan_area(libretro_save_buf + 0x20000, LIBRETRO_SAVE_BUF_SIZE_DEF - 0x20000))
    {
       libretro_save_size = 0x20000;
       if (log_cb)
@@ -187,7 +192,8 @@ static void check_system_specs(void)
 void retro_init(void)
 {
    struct retro_log_callback log;
-   memset(libretro_save_buf, 0xff, sizeof(libretro_save_buf));
+   libretro_save_buf = (uint8_t *)memalign_alloc(1, LIBRETRO_SAVE_BUF_SIZE_DEF);
+   memset(libretro_save_buf, 0xff, LIBRETRO_SAVE_BUF_SIZE_DEF);
    adjust_save_ram();
    environ_cb(RETRO_ENVIRONMENT_GET_CAN_DUPE, &can_dupe);
    if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
@@ -489,6 +495,12 @@ void retro_deinit(void)
 #endif
 
 	CPUCleanUp();
+
+   if (libretro_save_buf)
+   {
+      memalign_free(libretro_save_buf);
+      libretro_save_buf = NULL;
+   }
 
    libretro_supports_bitmasks = false;
 }
