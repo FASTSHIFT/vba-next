@@ -657,7 +657,7 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
    codeLine = (char*)calloc(codeLineSize,sizeof(char)) ;
 
-   sprintf(name, "cheat_%d", index);
+   snprintf(name, sizeof(name), "cheat_%d", index);
 
    //Break the code into Parts
    for (cursor=0;;cursor++)
@@ -814,7 +814,7 @@ void systemMessage(const char* fmt, ...)
    char buffer[256];
    va_list ap;
    va_start(ap, fmt);
-   vsprintf(buffer, fmt, ap);
+   vsnprintf(buffer, sizeof(buffer), fmt, ap);
    log_cb(RETRO_LOG_INFO, "%s\n", buffer);
    va_end(ap);
 }
