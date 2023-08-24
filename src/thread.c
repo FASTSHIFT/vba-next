@@ -4,6 +4,10 @@
 
 #ifdef THREADED_RENDERER
 
+#ifndef NULL
+#define NULL 0
+#endif
+
 #if VITA
 #include <psp2/kernel/threadmgr.h>
 
@@ -71,6 +75,8 @@ thread_t thread_run(threadfunc_t func, void* p, int priority)
 
    return thid;	
 }
+
+void retro_sleep(uint32_t ms);
 
 thread_t thread_get(void) { return 0; }
 void thread_sleep(int ms) { retro_sleep(ms); }
