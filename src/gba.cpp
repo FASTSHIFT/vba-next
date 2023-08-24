@@ -6729,23 +6729,6 @@ inline const TileLine gfxReadTilePal(const u16 *screenSource, const int yyy, con
    return tileLine;
 }
 
-#ifdef __ARM__
-#if HAVE_NEON
-static void neon_memcpy(void *dst, const void *src, size_t sz)
-{
-  if (sz & 63)
-  sz = (sz & -64) + 64;
-  asm volatile (
-  "NEONCopyPLD: \n"
-  " VLDM %[src]!,{d0-d7} \n"
-  " VSTM %[dst]!,{d0-d7} \n"
-  " SUBS %[sz],%[sz],#0x40 \n"
-  " BGT NEONCopyPLD \n"
-  : [dst]"+r"(dst), [src]"+r"(src), [sz]"+r"(sz) : : "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "cc", "memory");
-}
-#endif
-#endif
-
 static inline void gfxDrawTile(const TileLine &tileLine, u32* _line)
 {
 #if HAVE_NEON
