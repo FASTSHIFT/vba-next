@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdlib.h>
 #include <retro_miscellaneous.h>
 #include "thread.h"
 
@@ -60,17 +61,19 @@ static void _thread_func(void* p)
 {
    void** argp       = (void**)(p);
    threadfunc_t func = (threadfunc_t)(argp[0]);
-   (*func)(argp[1]);
+   void* param       = argp[1];
+   free(argp);
+   (*func)(param);
 }
 
 thread_t thread_run(threadfunc_t func, void* p, int priority)
 {
-   void* argp[2];
+   void** argp = (void**)malloc(sizeof(void*) * 2);
    sthread_t *thid = NULL;
    argp[0] = (void*)(func);
    argp[1] = p;
 
-   thid = sthread_create(_thread_func, &argp);
+   thid = sthread_create(_thread_func, argp);
    sthread_detach(thid);
 
    return thid;	
