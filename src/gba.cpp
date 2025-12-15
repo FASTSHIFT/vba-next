@@ -19,6 +19,7 @@
 #include "gba.h"
 #include "memory.h"
 #include "sound.h"
+#include "neon.h"
 
 #ifdef ELF
 #include "elf.h"
