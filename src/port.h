@@ -52,8 +52,12 @@
 #define CACHE_PREFETCH(prefetch) prefetch(&prefetch);
 #elif defined(_XBOX)
 #define CACHE_PREFETCH(prefetch) __dcbt(0, &prefetch);
-#else
+#elif defined(__ppc__) || defined(__powerpc__) || defined(_ARCH_PPC)
 #define CACHE_PREFETCH(prefetch) __dcbt(&prefetch);
+#elif defined(__GNUC__) || defined(__clang__)
+#define CACHE_PREFETCH(prefetch) __builtin_prefetch(&prefetch, 0, 3);
+#else
+#define CACHE_PREFETCH(prefetch) /* No cache prefetch support for this architecture */
 #endif
 #else
 #define CACHE_PREFETCH(prefetch)
